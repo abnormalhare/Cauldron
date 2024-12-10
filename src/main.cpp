@@ -5,7 +5,7 @@ int main(int argc, char* argv[]) {
     char* file = argv[2];
 
     if (cmd == "build") {
-        const Parser parser = Parser(file);
+        Parser parser = Parser(file);
         parser.parse();
     }
 

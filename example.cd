@@ -1,0 +1,66 @@
+public trait compare<T> {
+  fn ==(a: T, b: T);
+  fn !=(a: T, b: T);
+}
+public class Example {
+  var z: s32
+  func get_self(): Example => self
+}
+
+public class Point {
+  var x: s32;
+  var y: s32;
+  Point(s32 x, s32 y) {
+    self.x = x;
+    self.y = y;
+  }
+  impl compare<type self> { // could also be <Point>
+    fn ==(a: Point, b: Point) => a.x == b.x && a.y == b.y;
+    fn !=(a: Point, b: Point) => a.x != b.x || a.y != b.y;
+  }
+  impl Example {
+    override func get_self(): Point => self;
+  }
+}
+
+class Math {
+  overload func sin {
+    (deg: f32) {}
+    (deg: f64) {}
+  }
+}
+
+overload func add {
+  (val: &s32) => val += val;
+  (val1: &s32, val2: s32) => val1 += val2;
+}
+
+func main(argc: s32, argv: String[]): int {
+  var file: std.io.File;
+  
+  for (var line: String in file) {
+    println(line);
+  }
+
+  ret 0;
+}
+
+internal class Main(Game) {
+  override func run() {
+    // ...
+  }
+
+  -> func main(s32 argc, argv: String[]): s32 { 
+    
+  }
+}
+
+func (self: Main) run() {
+    var x: f32 = 1.0f; // or 1.f, not 1f
+    var y: s32 = x; // y = 1
+    var z: s32 = (static)x; // z = *(s32*) &x
+}
+
+func f(x: s32): func {
+  ret func(): s32 { ret x; };
+}

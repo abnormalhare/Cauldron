@@ -1,9 +1,6 @@
-#ifndef RESULT_T_H
-#define RESULT_T_H
+#pragma once
 
-typedef enum Result {
+enum Result {
     CDRES_OK,
     CDRES_FILE,
 };
-
-#endif

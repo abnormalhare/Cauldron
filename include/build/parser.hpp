@@ -1,18 +1,17 @@
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-
+#include <iostream>
+#include <fstream>
 #include "resultT.hpp"
+#include "build/tokenizer.hpp"
 
 class Parser {
     private:
         const char* fileName;
-        FILE* file;
+        std::ifstream file;
+        Tokenizer tokenizer;
+
     public:
         Parser(const char* fileName);
         void parse();
 };
-
-#endif
