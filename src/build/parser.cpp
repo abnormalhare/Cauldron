@@ -1,9 +1,9 @@
 #include "build/parser.hpp"
 
-Parser::Parser(const char* fileName) : fileName(fileName), file(fileName), tokenizer(file) {
+Parser::Parser(std::string fileName) : fileName(fileName), file(fileName), tokenizer(file) {
 
     if (!this->file.is_open()) {
-        printf("Error: Could not open file %s\n", fileName);
+        printf("Error: Could not open file %s\n", fileName.c_str());
         exit(CDRES_FILE);
     }
 };

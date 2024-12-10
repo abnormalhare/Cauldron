@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <array>
-
 enum TokenType {
     BAD_TOKEN = -1,
 
@@ -38,25 +35,4 @@ enum TokenType {
     // class words
     PUBLIC, PRIVATE, PROTECTED, INTERNAL,
     SELF,
-};
-
-std::array<std::string, 77> disallowedNames = {
-    "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
-    "bool", "string", "func", "date", "array", "vararray", "hashmap",
-    "struct", "union", "enum", "class", "trait", "impl",
-    "&", "*",
-    "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
-    "overload", "override", "const", "var", "type",
-    ";",
-    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "^", "<<", ">>",
-    "==", "!=", "<", ">", "<=", ">=",
-    "type", "=>",
-    "{", "}", "(", ")", "[", "]", "//", "/*", "*/",
-    "public", "private", "protected", "internal",
-    "self",
-};
-
-std::array<std::string, 20> funcOpNames = {
-    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "^", "<<", ">>",
-    "==", "!=", "<", ">", "<=", ">=",
 };

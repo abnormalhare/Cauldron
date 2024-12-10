@@ -7,11 +7,11 @@
 
 class Parser {
     private:
-        const char* fileName;
+        std::string fileName;
         std::ifstream file;
         Tokenizer tokenizer;
 
     public:
-        Parser(const char* fileName);
+        Parser(std::string fileName);
         void parse();
 };

@@ -22,12 +22,17 @@ bool Tokenizer::isTokenTypeValid(std::string value) {
         return false;
     }
 
+    std::cout << value << std::endl;
+
     if (allowedWords[0] == "__any") {
         if (this->nodeStruct->tokens[1] == FUNC) {
             if (std::find(funcOpNames.begin(), funcOpNames.end(), value) == funcOpNames.end()) {
                 this->nodeStruct->tokens.push_back(OP_FUNC);
                 this->nodeStruct->name = value;
-                this->nodeStruct->children.push_back(new Node{this->nodeStruct, {}, {}});
+
+                Node node = {this->nodeStruct, {}, {}};
+                std::shared_ptr<Node> snode = std::make_shared<Node>(node);
+                this->nodeStruct->children.push_back(snode);
             }
         }
     }
@@ -46,15 +51,16 @@ bool Tokenizer::isTokenTypeValid(std::string value) {
 }
 
 void Tokenizer::getToken(std::string value) {
-    bool isToken = false;
     std::string tokenValue;
 
-    
-    for (int index; !isToken && index < value.size(); index++) {
+    for (size_t index = 0; index < value.size(); index++) {
+        std::cout << value[index] << std::endl;
         if (isspace(value[index])) continue;
         tokenValue.push_back(value[index]);
 
-        isToken = this->isTokenTypeValid(tokenValue);
+        if (this->isTokenTypeValid(tokenValue)) {
+            tokenValue = "";
+        }
     }
     if (tokenValue != "") {
         exit(CDRES_TOKEN);
@@ -62,9 +68,10 @@ void Tokenizer::getToken(std::string value) {
 }
 
 void Tokenizer::tokenize() {
+    std::cout << "Tokenizing file..." << std::endl;
     while (!this->file.eof()) {
         std::string line;
         std::getline(this->file, line);
-        getToken(line);
+        this->getToken(line);
     }
 }

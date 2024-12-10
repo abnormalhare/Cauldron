@@ -15,7 +15,7 @@ OBJ = $(OBJ_DIR)/$(notdir $@)
 E_OBJ = $(foreach obj,$^,$(OBJ_DIR)/$(notdir $(obj)))
 
 # Output executable
-EXEC = Minecraft
+EXEC = Cauldron
 
 # Rule to build the executable
 $(EXEC): $(OBJ_FILES)
