@@ -15,14 +15,23 @@ enum TokenType {
 
     // keywords
     IF, ELSE, WHILE, FOR, BREAK, CONTINUE, RET, SWITCH, CASE,
-    OVERLOAD, OVERRIDE, CONST,
+    OVERLOAD, OVERRIDE, CONST, VAR, TYPE,
 
     // operators
     ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, AND, OR, XOR, SHL, SHR,
     EQ, NE, LT, GT, LE, GE,
+    TYPE_DEF, FUNC_DEF,
 
-    // protectors
+    // parentheses
+    TYPE_BEGIN, TYPE_END,
+    PARAMETER_BEGIN, PARAMETER_END,
+    FUNCTION_BEGIN, FUNCTION_END,
+    LINE_COMMENT, COMMENT_BEGIN, COMMENT_END,
+
+
+    // class words
     PUBLIC, PRIVATE, PROTECTED, INTERNAL,
+    SELF,
 };
 
 typedef struct Token {

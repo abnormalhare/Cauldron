@@ -10,7 +10,7 @@ public class Example {
 public class Point {
   var x: s32;
   var y: s32;
-  Point(s32 x, s32 y) {
+  Point(x: s32, y: s32) {
     self.x = x;
     self.y = y;
   }
@@ -19,6 +19,11 @@ public class Point {
     fn !=(a: Point, b: Point) => a.x != b.x || a.y != b.y;
   }
   impl Example {
+    Point(x: s32, y: s32, z: s32) {
+        self.x = x;
+        self.y = y;
+        self.z = z;
+    }
     override func get_self(): Point => self;
   }
 }
@@ -45,9 +50,11 @@ func main(argc: s32, argv: String[]): int {
   ret 0;
 }
 
-internal class Main(Game) {
-  override func run() {
-    // ...
+internal class Main {
+  impl Game {
+    override func run() {
+      // ...
+    }
   }
 
   -> func main(s32 argc, argv: String[]): s32 { 
