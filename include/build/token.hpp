@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <array>
 
 enum TokenType {
     BAD_TOKEN = -1,
@@ -10,12 +11,17 @@ enum TokenType {
     BOOL, STRING, FUNC, DATE, ARRAY, VARARRAY, HASHMAP,
     STRUCT, UNION, ENUM, CLASS, TRAIT, IMPL,
 
+    // operator function
+    OP_FUNC,
+
     // pointers
     REF, PTR,
 
     // keywords
     IF, ELSE, WHILE, FOR, BREAK, CONTINUE, RET, SWITCH, CASE,
     OVERLOAD, OVERRIDE, CONST, VAR, TYPE,
+
+    END,
 
     // operators
     ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, AND, OR, XOR, SHL, SHR,
@@ -34,7 +40,23 @@ enum TokenType {
     SELF,
 };
 
-typedef struct Token {
-    TokenType type;
-    std::string value;
+std::array<std::string, 77> disallowedNames = {
+    "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
+    "bool", "string", "func", "date", "array", "vararray", "hashmap",
+    "struct", "union", "enum", "class", "trait", "impl",
+    "&", "*",
+    "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
+    "overload", "override", "const", "var", "type",
+    ";",
+    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "^", "<<", ">>",
+    "==", "!=", "<", ">", "<=", ">=",
+    "type", "=>",
+    "{", "}", "(", ")", "[", "]", "//", "/*", "*/",
+    "public", "private", "protected", "internal",
+    "self",
+};
+
+std::array<std::string, 20> funcOpNames = {
+    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "^", "<<", ">>",
+    "==", "!=", "<", ">", "<=", ">=",
 };
