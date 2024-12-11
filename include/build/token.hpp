@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+#include <string>
+
 enum TokenType {
     BAD_TOKEN = -1,
 
@@ -24,7 +28,7 @@ enum TokenType {
     // operators
     ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, BAND, BOR, AND, OR, XOR, SHL, SHR,
     EQ, NE, LT, GT, LE, GE,
-    FUNC_OP,
+    LAMBDA,
 
     // parentheses
     TYPE_DEF,
@@ -38,4 +42,15 @@ enum TokenType {
     // class words
     PUBLIC, PRIVATE, PROTECTED, INTERNAL,
     SELF,
+};
+
+bool isSeparator(char value);
+bool isSeparatorType(TokenType type);
+bool isOOP(TokenType type);
+
+struct Node {
+    std::shared_ptr<Node> parent;
+    std::vector<TokenType> tokens;
+    std::string name;
+    std::vector<std::shared_ptr<Node>> children;
 };

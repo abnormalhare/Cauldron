@@ -5,4 +5,5 @@ enum Result {
     CDRES_ARGS,
     CDRES_FILE,
     CDRES_SYNTAX,
+    CDRES_UNIMPLEMENTED,
 };

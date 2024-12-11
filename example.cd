@@ -1,9 +1,9 @@
 public trait compare<T> {
-  fn ==(a: T, b: T);
-  fn !=(a: T, b: T);
+  func ==(a: T, b: T);
+  func !=(a: T, b: T);
 }
 public class Example {
-  var z: s32
+  var z: s32;
   func get_self(): Example => self
 }
 
@@ -15,8 +15,8 @@ public class Point {
     self.y = y;
   }
   impl compare<type self> { // could also be <Point>
-    fn ==(a: Point, b: Point) => a.x == b.x && a.y == b.y;
-    fn !=(a: Point, b: Point) => a.x != b.x || a.y != b.y;
+    fn ==(a: Point, b: Point): bool => a.x == b.x && a.y == b.y;
+    fn !=(a: Point, b: Point): bool => a.x != b.x || a.y != b.y;
   }
   impl Example {
     Point(x: s32, y: s32, z: s32) {

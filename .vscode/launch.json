@@ -16,6 +16,7 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "gdb.exe",
+            "preLaunchTask": "make",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

@@ -7,7 +7,7 @@ BUILD_DIR = $(SRC_DIR)/build
 OBJ_DIR = build
 
 # Files
-C_FILES = $(wildcard $(SRC_DIR)/*.cpp $(BUILD_DIR)/*.cpp)
+C_FILES = $(wildcard $(BUILD_DIR)/*.cpp $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(C_FILES:.cpp=.o)
 
 # Build

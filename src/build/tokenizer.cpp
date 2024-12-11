@@ -1,90 +1,248 @@
 #include "build/tokenizer.hpp"
 
 Tokenizer::Tokenizer(std::ifstream& file) : file(file) {
-    this->nodeStruct = std::make_shared<Node>();
+    // create root node THAT SHOULD NEVER HAVE TOKENS OR A NAME
+    this->nodeStruct = this->root = std::make_shared<Node>();
     this->nodeStruct->parent = nullptr;
     this->nodeStruct->tokens = {};
     this->nodeStruct->name = "";
-    this->nodeStruct->children = {};
+
+    // create first child node
+    this->nodeStruct = this->createChildNode();
+}
+
+std::shared_ptr<Node> Tokenizer::createChildNode() {
+    // create a node with current node as its parent
+    Node node = {this->nodeStruct, {}, {}};
+    // create a shared pointer to the node
+    std::shared_ptr<Node> snode = std::make_shared<Node>(node);
+    // add the node to the children of the current node
+    this->nodeStruct->children.push_back(snode);
+    return snode;
 }
 
 void Tokenizer::setCurrNodeAccess(TokenType tokenType) {
+    // oop words allowed
     this->allowedWords = {
         "class", "struct", "enum", "trait", "type"
     };
 
-    if (this->nodeStruct->parent == nullptr) {
-        this->nodeStruct->tokens.push_back(tokenType);
+    if (this->nodeStruct->parent == this->root) {
+        nsAdd(tokenType);
     } else {
+        // if within OOP, add more allowed words
+        // we shouldnt need to wory about functions and variables
+        // outside of OOP because it should otherwise be procedural (and therefore public)
         this->allowedWords.push_back("func");
         this->allowedWords.push_back("var");
 
-        this->nodeStruct->tokens.push_back(tokenType);
+        nsAdd(tokenType);
     }
 }
 
-bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
-    if (this->allowedWords[0] == "__any" && this->isNameComplete) {
-        std::cout << value << std::endl;
+void Tokenizer::setCurrNodeStructure(TokenType tokenType) {
+    // if we define a structure without access identified, it
+    // should be private by default (like other languages)
+    if (this->nodeStruct->tokens.size() == 0) {
+        nsAdd(PRIVATE);
+    }
+    nsAdd(tokenType);
+    this->allowedWords = {"__str"};
+    this->isNameReady = true;
+}
 
-        if (value.size() == 0) {
-            res = CDRES_SYNTAX;
+void Tokenizer::setCurrNodeFunction(TokenType tokenType) {
+    // if we havent defined an access
+    if (this->nodeStruct->tokens.size() == 0) {
+        // if the function is defined outside of an OOP structure
+        if (this->nodeStruct->parent == this->root) {
+            // use procedural
+            nsAdd(PUBLIC);
+        } else {
+            // otherwise, use the parent's access
+            nsAdd(currParentAccess);
         }
+    }
+    nsAdd(tokenType);
+    this->allowedWords = {"__str"};
+    this->isNameReady = true;
+}
 
-        this->isNameComplete = false;
-        if (this->nodeStruct->tokens[1] == FUNC) {
-            if (std::find(funcOpNames.begin(), funcOpNames.end(), value) == funcOpNames.end()) {
-                this->nodeStruct->tokens[1] = OP_FUNC;
-            }
-        }
-        if (std::find(disallowedNames.begin(), disallowedNames.end(), value) != disallowedNames.end()) {
-            res = CDRES_SYNTAX;
-        }
+void Tokenizer::setCurrNodeCompare(TokenType tokenType) {
+    // if we are comparing outside an if statement, return
+    std::shared_ptr<Node> node;
+    for (node = this->nodeStruct; node != nullptr; node = node->parent) {
+        if (node->tokens.size() > 0 && (node->tokens.at(0) == IF || node->tokens.at(0) == LAMBDA)) break;
+    }
+    if (node == nullptr) return;
 
-        this->nodeStruct->name = value;
-        Node node = {this->nodeStruct, {}, {}};
-        std::shared_ptr<Node> snode = std::make_shared<Node>(node);
-        this->nodeStruct->children.push_back(snode);
+    nsAdd(tokenType);
+    this->allowedWords = {"__int", "="};
+    this->isNameReady = true;
+}
+
+bool Tokenizer::isValueName(std::string value, Result& res) {
+    if (this->allowedWords[0] != "__str" || !this->isNameComplete) return false;
+
+    if (value.size() == 0) {
+        this->badName = value;
+        res = CDRES_SYNTAX;
+        handleError(res);
     }
 
-    if (!std::count(allowedWords.begin(), allowedWords.end(), value)) {
-        return false;
+    this->isNameComplete = false;
+    TokenType prevToken = this->nodeStruct->tokens.at(indexBackward(-1));
+    TokenType typeToken = this->nodeStruct->tokens.at(0);
+    if (prevToken != FUNC) {
+        if (isValInArray(value, disallowedNames)) {
+            this->badName = value;
+            res = CDRES_SYNTAX;
+            handleError(res);
+        }
+    } else if (isValInArray(value, disallowedFuncOpNames)) {
+        this->badName = value;
+        res = CDRES_SYNTAX;
+        handleError(res);
+    } else if (isValInArray(value, funcOpNames)) {
+        this->nodeStruct->tokens.at(indexBackward(-1)) = OP_FUNC;
     }
-    std::cout << value << std::endl;
 
-    if      (value == "public") this->setCurrNodeAccess(PUBLIC);
-    else if (value == "private") this->setCurrNodeAccess(PRIVATE);
-    else if (value == "protected") this->setCurrNodeAccess(PROTECTED);
-    else if (value == "internal") this->setCurrNodeAccess(INTERNAL);
-    else if (value == "class") {
-        this->nodeStruct->tokens.push_back(CLASS);
-        this->allowedWords = {"__any"};
-        this->isNameReady = true;
-    } else if (value == "trait") {
-        this->nodeStruct->tokens.push_back(TRAIT);
-        this->allowedWords = {"__any"};
-        this->isNameReady = true;
+    this->nodeStruct->name = value;
+
+    switch (prevToken) {
+    case TRAIT:
+        this->nodeStruct = createChildNode();
+        this->allowedWords = { "<", "{" };
+        break;
+    
+    case CLASS:
+        this->nodeStruct = createChildNode();
+        this->allowedWords = { "{" };
+        break;
+    
+    case FUNC:
+    case OP_FUNC:
+        this->nodeStruct = createChildNode();
+        if (typeToken == OVERLOAD)
+             this->allowedWords = { "{" };
+        else this->allowedWords = { "(" };
+        break;
+
+    case TYPE_DEF:
+        this->allowedWords = { ">" };
+        break;
+
+    case PARAMETER_DEF:
+        this->allowedWords = { ":" };
+        break;
+
+    case ITEM_SEPARATOR:
+        this->nodeStruct->tokens.pop_back();
+        this->nodeStruct = this->nodeStruct->parent;
+        if (currParentName == "params") {
+            this->allowedWords = { ":" };
+        } else {
+            this->allowedWords = { ",", "]" };
+        }
+        break;
+
+    case TYPE_IDENT:
+        this->nodeStruct = this->nodeStruct->parent;
+        this->allowedWords = { ",", ")" };
+        break;
+    
+    default:
+        this->badToken = prevToken;
+        res = CDRES_UNIMPLEMENTED;
+        break;
     }
 
     return true;
 }
 
-bool isSeparator(char value) {
-    return value == ';' || value == ',' || value == ':' || value == '.'
-        || value == '{' || value == '}'
-        || value == '(' || value == ')'
-        || value == '[' || value == ']'
-        || value == '<' || value == '>';
+bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
+    if (value == "") return true;
+
+    if (this->isValueName(value, res)) {
+        handleError(res);
+        return true;
+    }
+
+    if (!std::count(allowedWords.begin(), allowedWords.end(), value)) {
+        return false;
+    }
+
+         if (value == "public") this->setCurrNodeAccess(PUBLIC);
+    else if (value == "private") this->setCurrNodeAccess(PRIVATE);
+    else if (value == "protected") this->setCurrNodeAccess(PROTECTED);
+    else if (value == "internal") this->setCurrNodeAccess(INTERNAL);
+
+    else if (value == "class") this->setCurrNodeStructure(CLASS);
+    else if (value == "trait") this->setCurrNodeStructure(TRAIT);
+    else if (value == "struct") this->setCurrNodeStructure(STRUCT);
+    else if (value == "enum") this->setCurrNodeStructure(ENUM);
+
+    else if (value == "func") this->setCurrNodeFunction(FUNC);
+    else if (value == "overload") this->setCurrNodeFunction(OVERLOAD);
+    else if (value == "override") this->setCurrNodeFunction(OVERRIDE);
+
+    else if (value == "<") { this->setCurrNodeCompare(LT);
+        if (isOOP(currParentStructure)) {
+            nsAdd(TYPE_DEF);
+            this->allowedWords = {"__str"};
+            this->isNameReady = true;
+        }
+    } else if (value == ">") { this->setCurrNodeCompare(GT);
+        if (isOOP(currParentStructure)) {
+            this->nodeStruct = this->nodeStruct->parent;
+            this->allowedWords = {"{"};
+        }
+    } else if (value == "{") {
+        this->nodeStruct = createChildNode();
+        this->allowedWords = { "func", "impl" };
+    } else if (value == "}") {
+        this->nodeStruct = this->nodeStruct->parent;
+        this->allowedWords = baseAllowedTokens;
+    } else if (value == "(") {
+        this->nodeStruct->name = "params";
+
+        this->nodeStruct = createChildNode();
+        nsAdd(PARAMETER_DEF);
+        this->allowedWords = { "__str", ")" };
+        this->isNameReady = true;
+    } else if (value == ")") {
+        this->nodeStruct = this->nodeStruct->parent->parent->parent;
+        if (currStructure == TRAIT) {
+            this->allowedWords = {";"};
+        } else {
+            this->allowedWords = {":", "{"};
+        }
+    } else if (value == ":") {
+        this->nodeStruct = createChildNode();
+        this->nodeStruct->name = "type";
+        nsAdd(TYPE_IDENT);
+        this->allowedWords = { "__str" };
+        this->isNameReady = true;
+    } else if (value == ",") {
+        this->nodeStruct = this->nodeStruct->parent;
+        this->nodeStruct = createChildNode();
+        if (currParentName == "params") nsAdd(PARAMETER_DEF);
+        this->allowedWords = { "__str" };
+        this->isNameReady = true;
+    } else if (value == ";") {
+        while (this->nodeStruct != nullptr && (!isOOP(currStructure) || currStructure == FUNC)) {
+            this->nodeStruct = this->nodeStruct->parent;
+        }
+        this->nodeStruct = createChildNode();
+
+        allowedWords = baseAllowedTokens;
+    }
+
+    return true;
 }
 
-bool isSeparatorType(TokenType type) {
-    return type == END || type == ITEM_SEPARATOR || type == TYPE_IDENT || type == MODULE_ACCESS
-        || type == TYPE_DEF || type == FUNC_OP || type == PARAMETER_DEF
-        || type == FUNCTION_DEF || type == CLASS_DEF || type == TRAIT_DEF || type == IMPL_DEF
-        || type == COMMENT_DEF;
-}
-
-void Tokenizer::getToken(std::string value, Result& res) {
+void Tokenizer::getToken(std::string value) {
+    Result res = CDRES_OK;
     std::string tokenValue;
 
     for (size_t index = 0; index < value.size(); index++) {
@@ -100,31 +258,17 @@ void Tokenizer::getToken(std::string value, Result& res) {
         }
 
         if (this->isTokenTypeValid(tokenValue, res)) {
-            
             tokenValue = "";
         }
     }
 
-    if (tokenValue != "") {
+    if (tokenValue.size() > 0) {
+        this->badName = tokenValue;
         res = CDRES_SYNTAX;
     }
-}
 
-void printNode(std::shared_ptr<Node> node) {
-    std::cout << "Node: " << node->name << std::endl;
-    std::cout << "Tokens: " << std::endl;
-    for (auto& token : node->tokens) {
-        std::cout << "| " << printNames[token] << std::endl;
-    }
+    handleError(res);
 }
-
-void debugPrint(std::shared_ptr<Node> node) {
-    // print all nodes
-    printNode(node);
-    for (auto& child : node->children) {
-        debugPrint(child);
-    }
-};
 
 void Tokenizer::handleError(Result res) {
     switch (res) {
@@ -135,25 +279,25 @@ void Tokenizer::handleError(Result res) {
             std::cout << "Error: Invalid file" << std::endl;
             break;
         case CDRES_SYNTAX:
-            std::cout << "Error: Invalid syntax: " << printNames[this->nodeStruct->tokens.back()] << std::endl;
+            std::cout << "Error: Invalid syntax: \"" << this->badName << "\" (" << this->badName.size() << ")" << std::endl;
+            break;
+        case CDRES_UNIMPLEMENTED:
+            std::cout << "Error: Unimplemented feature: " << this->badToken << std::endl;
             break;
         default:
             break;
     }
+    
+    if (res != CDRES_OK) exit(res);
 }
 
 void Tokenizer::tokenize() {
-    Result res;
-
     std::cout << "Tokenizing file..." << std::endl;
-    // while (!this->file.eof()) {
+    while (!this->file.eof()) {
         std::string line;
         std::getline(this->file, line);
-        this->getToken(line, res);
+        this->getToken(line);
 
-        while (this->nodeStruct->parent != nullptr) {
-            this->nodeStruct = this->nodeStruct->parent;
-        }
-        debugPrint(this->nodeStruct);
-    // }
+        debugPrint(this->root);
+    }
 }
