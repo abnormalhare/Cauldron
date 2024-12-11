@@ -30,7 +30,7 @@ enum TokenType {
     EQ, NE, LT, GT, LE, GE,
     LAMBDA,
 
-    // parentheses
+    // brackets
     TYPE_DEF,
     PARAMETER_DEF,
     FUNCTION_DEF,
@@ -47,6 +47,7 @@ enum TokenType {
 bool isSeparator(char value);
 bool isSeparatorType(TokenType type);
 bool isOOP(TokenType type);
+bool isFunc(TokenType type);
 
 struct Node {
     std::shared_ptr<Node> parent;

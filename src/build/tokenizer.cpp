@@ -4,7 +4,7 @@ Tokenizer::Tokenizer(std::ifstream& file) : file(file) {
     // create root node THAT SHOULD NEVER HAVE TOKENS OR A NAME
     this->nodeStruct = this->root = std::make_shared<Node>();
     this->nodeStruct->parent = nullptr;
-    this->nodeStruct->tokens = {};
+    this->nodeStruct->tokens = {BAD_TOKEN};
     this->nodeStruct->name = "";
 
     // create first child node
@@ -21,6 +21,14 @@ std::shared_ptr<Node> Tokenizer::createChildNode() {
     return snode;
 }
 
+void Tokenizer::nsAdd(TokenType token) {
+    this->nodeStruct->tokens.push_back(token);
+}
+
+void Tokenizer::nsSetParent() {
+    this->nodeStruct = this->nodeStruct->parent;
+}
+
 void Tokenizer::setCurrNodeAccess(TokenType tokenType) {
     // oop words allowed
     this->allowedWords = {
@@ -28,7 +36,7 @@ void Tokenizer::setCurrNodeAccess(TokenType tokenType) {
     };
 
     if (this->nodeStruct->parent == this->root) {
-        nsAdd(tokenType);
+        this->nsAdd(tokenType);
     } else {
         // if within OOP, add more allowed words
         // we shouldnt need to wory about functions and variables
@@ -36,7 +44,7 @@ void Tokenizer::setCurrNodeAccess(TokenType tokenType) {
         this->allowedWords.push_back("func");
         this->allowedWords.push_back("var");
 
-        nsAdd(tokenType);
+        this->nsAdd(tokenType);
     }
 }
 
@@ -44,9 +52,9 @@ void Tokenizer::setCurrNodeStructure(TokenType tokenType) {
     // if we define a structure without access identified, it
     // should be private by default (like other languages)
     if (this->nodeStruct->tokens.size() == 0) {
-        nsAdd(PRIVATE);
+        this->nsAdd(PRIVATE);
     }
-    nsAdd(tokenType);
+    this->nsAdd(tokenType);
     this->allowedWords = {"__str"};
     this->isNameReady = true;
 }
@@ -57,13 +65,13 @@ void Tokenizer::setCurrNodeFunction(TokenType tokenType) {
         // if the function is defined outside of an OOP structure
         if (this->nodeStruct->parent == this->root) {
             // use procedural
-            nsAdd(PUBLIC);
+            this->nsAdd(PUBLIC);
         } else {
             // otherwise, use the parent's access
-            nsAdd(currParentAccess);
+            this->nsAdd(currParentAccess);
         }
     }
-    nsAdd(tokenType);
+    this->nsAdd(tokenType);
     this->allowedWords = {"__str"};
     this->isNameReady = true;
 }
@@ -76,7 +84,7 @@ void Tokenizer::setCurrNodeCompare(TokenType tokenType) {
     }
     if (node == nullptr) return;
 
-    nsAdd(tokenType);
+    this->nsAdd(tokenType);
     this->allowedWords = {"__int", "="};
     this->isNameReady = true;
 }
@@ -94,7 +102,7 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
     TokenType prevToken = this->nodeStruct->tokens.at(indexBackward(-1));
     TokenType typeToken = this->nodeStruct->tokens.at(0);
     if (prevToken != FUNC) {
-        if (isValInArray(value, disallowedNames)) {
+        if (isValInArray(value, disallowedNames) || areSymbolsInVal(value, disallowedSymbols)) {
             this->badName = value;
             res = CDRES_SYNTAX;
             handleError(res);
@@ -138,7 +146,7 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
 
     case ITEM_SEPARATOR:
         this->nodeStruct->tokens.pop_back();
-        this->nodeStruct = this->nodeStruct->parent;
+        this->nsSetParent();
         if (currParentName == "params") {
             this->allowedWords = { ":" };
         } else {
@@ -147,7 +155,7 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
         break;
 
     case TYPE_IDENT:
-        this->nodeStruct = this->nodeStruct->parent;
+        this->nsSetParent();
         this->allowedWords = { ",", ")" };
         break;
     
@@ -188,31 +196,42 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
 
     else if (value == "<") { this->setCurrNodeCompare(LT);
         if (isOOP(currParentStructure)) {
-            nsAdd(TYPE_DEF);
+            this->nsAdd(TYPE_DEF);
             this->allowedWords = {"__str"};
             this->isNameReady = true;
         }
     } else if (value == ">") { this->setCurrNodeCompare(GT);
         if (isOOP(currParentStructure)) {
-            this->nodeStruct = this->nodeStruct->parent;
+            this->nsSetParent();
             this->allowedWords = {"{"};
         }
     } else if (value == "{") {
         this->nodeStruct = createChildNode();
         this->allowedWords = { "func", "impl" };
     } else if (value == "}") {
-        this->nodeStruct = this->nodeStruct->parent;
-        this->allowedWords = baseAllowedTokens;
+        while (this->nodeStruct->tokens.size() == 0) {
+            this->nsSetParent();
+        }
+        while (this->nodeStruct != nullptr && (!isOOP(currStructure) && !isFunc(currStructure))) {
+            this->nsSetParent();
+        }
+        this->nsSetParent();
+        this->nodeStruct = createChildNode();
+
+        allowedWords = baseAllowedTokens;
     } else if (value == "(") {
         this->nodeStruct->name = "params";
+        this->nsAdd(PARAMETER_DEF);
 
         this->nodeStruct = createChildNode();
-        nsAdd(PARAMETER_DEF);
+        this->nsAdd(PARAMETER_DEF);
         this->allowedWords = { "__str", ")" };
         this->isNameReady = true;
     } else if (value == ")") {
-        this->nodeStruct = this->nodeStruct->parent->parent->parent;
-        if (currStructure == TRAIT) {
+        while (!isOOP(currStructure) && !isFunc(currStructure)) {
+            this->nsSetParent();
+        }
+        if (currParentStructure == TRAIT) {
             this->allowedWords = {";"};
         } else {
             this->allowedWords = {":", "{"};
@@ -220,18 +239,18 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
     } else if (value == ":") {
         this->nodeStruct = createChildNode();
         this->nodeStruct->name = "type";
-        nsAdd(TYPE_IDENT);
+        this->nsAdd(TYPE_IDENT);
         this->allowedWords = { "__str" };
         this->isNameReady = true;
     } else if (value == ",") {
-        this->nodeStruct = this->nodeStruct->parent;
+        this->nsSetParent();
         this->nodeStruct = createChildNode();
-        if (currParentName == "params") nsAdd(PARAMETER_DEF);
+        if (currParentName == "params") this->nsAdd(PARAMETER_DEF);
         this->allowedWords = { "__str" };
         this->isNameReady = true;
     } else if (value == ";") {
         while (this->nodeStruct != nullptr && (!isOOP(currStructure) || currStructure == FUNC)) {
-            this->nodeStruct = this->nodeStruct->parent;
+            this->nsSetParent();
         }
         this->nodeStruct = createChildNode();
 
@@ -258,6 +277,7 @@ void Tokenizer::getToken(std::string value) {
         }
 
         if (this->isTokenTypeValid(tokenValue, res)) {
+            this->callDebugPrint();
             tokenValue = "";
         }
     }
@@ -298,6 +318,11 @@ void Tokenizer::tokenize() {
         std::getline(this->file, line);
         this->getToken(line);
 
-        debugPrint(this->root);
+        // this->callDebugPrint();
     }
+}
+
+void Tokenizer::callDebugPrint() {
+    std::cout << "================" << std::endl;
+    debugPrint(this->root);
 }

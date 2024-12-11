@@ -18,3 +18,7 @@ bool isSeparatorType(TokenType type) {
 bool isOOP(TokenType type) {
     return type == CLASS || type == TRAIT || type == IMPL;
 }
+
+bool isFunc(TokenType type) {
+    return type == FUNC || type == OP_FUNC;
+}

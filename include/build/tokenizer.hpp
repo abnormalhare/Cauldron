@@ -30,6 +30,12 @@ const std::array<std::string, 85> disallowedNames = {
     "self",
 };
 
+const std::array<char, 27> disallowedSymbols {
+    '+', '-', '*', '/', '%', '!', '&', '|', '^', '<',
+    '>', '=', '?', ':', ';', ',', '(', ')', '{', '}',
+    '[', ']', '.', ' ', '\t', '\n', '\r'
+};
+
 const std::array<std::string, 22> funcOpNames = {
     "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
     "==", "!=", "<", ">", "<=", ">=",
@@ -50,19 +56,20 @@ const std::array<std::string, 60> disallowedFuncOpNames = {
     "self",
 };
 
-#define isValInArray(value, array) std::find(array.begin(), array.end(), value) != array.end()
+#define isValInArray(value, array) \
+    std::find(array.begin(), array.end(), value) != array.end()
+#define areSymbolsInVal(value, symbols) \
+    std::any_of(value.begin(), value.end(), [](char c) { return isValInArray(c, symbols); })
 #define indexBackward(index) this->nodeStruct->tokens.size() index
 
 #define currAccess this->nodeStruct->tokens[0]
 #define currType this->nodeStruct->tokens[0]
-#define currStructure this->nodeStruct->tokens[1]
+#define currStructure this->nodeStruct->tokens.back()
 #define currName this->nodeStruct->name
 #define currParentAccess this->nodeStruct->parent->tokens[0]
 #define currParentType this->nodeStruct->parent->tokens[0]
 #define currParentStructure this->nodeStruct->parent->tokens[1]
 #define currParentName this->nodeStruct->parent->name
-
-#define nsAdd(token) this->nodeStruct->tokens.push_back(token)
 
 const std::vector<std::string> baseAllowedTokens = {
     "public", "private", "protected", "internal",
@@ -85,11 +92,17 @@ class Tokenizer {
 
         std::shared_ptr<Node> createChildNode();
 
+        void nsAdd(TokenType token);
+        void nsSetParent();
+
         bool isValueName(std::string value, Result& res);
         void setCurrNodeAccess(TokenType tokenType);
         void setCurrNodeStructure(TokenType tokenType);
         void setCurrNodeFunction(TokenType tokenType);
         void setCurrNodeCompare(TokenType tokenType);
+
+        void callDebugPrint();
+
     public:
         Tokenizer(std::ifstream& file);
         bool isTokenTypeValid(std::string value, Result& res);
