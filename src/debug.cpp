@@ -1,17 +1,17 @@
 #include "debug.hpp"
 
-const std::array<std::string, 82> printNames = {
+const std::array<std::string, 84> printNames = {
     "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
     "bool", "string", "func", "date", "array", "vararray", "hashmap",
     "struct", "union", "enum", "class", "trait", "impl",
     "op func",
     "&", "*",
     "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
-    "overload", "override", "const", "var", "type",
-    ";", ":", ".", ",",
+    "overload", "override", "const", "var", "type", "static",
+    ";", ":", ".", ",", "=",
     "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
     "==", "!=", "<", ">", "<=", ">=",
-    "[file]", "[type]", "[parameter]", "[function]", "[class]", "[trait]", "[impl]",
+    "[file]", "[generic]", "[parameter]", "[function]", "[class]", "[trait]", "[impl]",
     "[line comment]", "[comment]",
     "public", "private", "protected", "internal",
     "self",

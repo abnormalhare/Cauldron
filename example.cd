@@ -63,7 +63,7 @@ internal class Main {
 }
 
 func (self: Main) run() {
-    var x: f32 = 1.0f; // or 1.f, not 1f
+    var x: f32 = 1.0f; // or 1.f, 1f
     var y: s32 = x; // y = 1
     var z: s32 = (static)x; // z = *(s32*) &x
 }

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ctype.h>
 #include <cstdarg>
+#include <iterator>
 
 #include "base.hpp"
 #include "resultT.hpp"
@@ -67,7 +68,6 @@ class Tokenizer {
         std::string fileName;
         std::ifstream& file;
 
-        Token* rootToken;
         std::vector<Token*> baseTokens;
         Token* currToken;
         

@@ -31,6 +31,14 @@ void Token::remove(Token* token) {
     }
 }
 
+void Token::replace(Token* from, Token* to) {
+    auto token = find(from, this->children);
+    if (token == this->children.end()) return;
+
+    int index = std::distance(this->children.begin(), token);
+    this->children[index] = to;
+}
+
 void Token::cutToChild(int cutTokenPos, int pasteTokenPos) {
     Token* cut = this->children[cutTokenPos];
     this->children[pasteTokenPos]->children.push_back(cut);

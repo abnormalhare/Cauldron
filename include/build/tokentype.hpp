@@ -20,10 +20,10 @@ enum TokenType {
 
     // keywords
     IF, ELSE, WHILE, FOR, BREAK, CONTINUE, RET, SWITCH, CASE,
-    OVERLOAD, OVERRIDE, CONST, VAR, TYPE,
+    OVERLOAD, OVERRIDE, CONST, VAR, TYPE, STATIC,
 
     // symbols
-    END, TYPE_IDENT, MODULE_ACCESS, ITEM_SEPARATOR,
+    END, TYPE_IDENT, MODULE_ACCESS, ITEM_SEPARATOR, DEFINE,
 
     // operators
     ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, BAND, BOR, AND, OR, XOR, SHL, SHR,
@@ -31,7 +31,7 @@ enum TokenType {
 
     // brackets
     FILE_DEF,
-    TYPE_DEF,
+    GENERIC_DEF,
     PARAMETER_DEF,
     FUNCTION_DEF,
     CLASS_DEF,

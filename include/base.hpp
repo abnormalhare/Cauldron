@@ -9,3 +9,5 @@
 
 #define isValInArray(value, array) \
     (find(value, array) != array.end())
+
+#define mycopy(arr1, arr2) copy(arr1.begin(), arr1.end(), back_inserter(arr2))
