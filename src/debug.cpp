@@ -1,6 +1,6 @@
 #include "debug.hpp"
 
-const std::array<std::string, 81> printNames = {
+const std::array<std::string, 82> printNames = {
     "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
     "bool", "string", "func", "date", "array", "vararray", "hashmap",
     "struct", "union", "enum", "class", "trait", "impl",
@@ -11,30 +11,27 @@ const std::array<std::string, 81> printNames = {
     ";", ":", ".", ",",
     "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
     "==", "!=", "<", ">", "<=", ">=",
-    "[type]", "[parameter]", "[function]", "[class]", "[trait]", "[impl]",
+    "[file]", "[type]", "[parameter]", "[function]", "[class]", "[trait]", "[impl]",
     "[line comment]", "[comment]",
     "public", "private", "protected", "internal",
     "self",
 };
 
 int numLines = 0;
-void printNode(Node* node) {
+void printNode(Token* token) {
     std::string indent;
     for (int i = 0; i < numLines; i++) {
         indent += "| ";
     }
 
-    std::cout << indent << "\"" << node->name << "\"" << std::endl;
-    for (auto& token : node->tokens) {
-        std::cout << indent << "| " << printNames[token] << std::endl;
-    }
+    std::cout << indent << printNames[token->type] << ": \"" << token->value << "\"" << std::endl;
 }
 
-void debugPrint(Node* node) {
+void debugPrint(Token* token) {
     // print all nodes
-    printNode(node);
+    printNode(token);
     numLines++;
-    for (auto& child : node->children) {
+    for (auto child : token->children) {
         debugPrint(child);
     }
     numLines--;

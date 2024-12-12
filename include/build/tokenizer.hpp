@@ -1,17 +1,14 @@
 #pragma once
 
-#include <iostream>
 #include <fstream>
-#include <vector>
 #include <ctype.h>
-#include <algorithm>
-#include <array>
-#include <string>
+#include <cstdarg>
 
+#include "base.hpp"
 #include "resultT.hpp"
 #include "debug.hpp"
+#include "build/tokentype.hpp"
 #include "build/token.hpp"
-#include "build/node.hpp"
 
 const std::array<std::string, 28> disallowedNames = {
     "struct", "union", "enum", "class", "trait", "impl",
@@ -49,20 +46,9 @@ const std::array<std::string, 60> disallowedFuncOpNames = {
     "self",
 };
 
-#define isValInArray(value, array) \
-    (std::find(array.begin(), array.end(), value) != array.end())
+
 #define areSymbolsInVal(value, symbols) \
     (std::any_of(value.begin(), value.end(), [](char c) { return isValInArray(c, symbols); }))
-#define indexBackward(index) this->nodeStruct->tokens.size() index
-
-#define currAccess this->nodeStruct->tokens[0]
-#define currType this->nodeStruct->tokens[0]
-#define currStructure this->nodeStruct->tokens.back()
-#define currName this->nodeStruct->name
-#define currParentAccess this->nodeStruct->parent->tokens[0]
-#define currParentType this->nodeStruct->parent->tokens[0]
-#define currParentStructure this->nodeStruct->parent->tokens[1]
-#define currParentName this->nodeStruct->parent->name
 
 const std::vector<std::string> baseAllowedTokens = {
     "public", "private", "protected", "internal",
@@ -78,28 +64,33 @@ const std::vector<std::string> baseAllowedTypes = {
 
 class Tokenizer {
     private:
+        std::string fileName;
         std::ifstream& file;
-        std::vector<std::string> allowedWords = baseAllowedTokens;
-        Node* root;
-        Node* nodeStruct;
-        char sepUnused = 0x0;
+
+        Token* rootToken;
+        std::vector<Token*> baseTokens;
+        Token* currToken;
         
+        Token* compareAgainst;
+        std::vector<std::string> allowedValues = baseAllowedTokens;
+
         std::string badName;
         TokenType badToken;
 
-        bool isValueName(std::string value, Result& res);
-        void setCurrNodeAccess(TokenType tokenType);
-        void setCurrNodeStructure(TokenType tokenType);
-        void setCurrNodeFunction(TokenType tokenType);
-        void setCurrNodeCompare(TokenType tokenType);
-        void setCurrNodeVar(std::string tokenName);
+        void setTokenName(std::string value);
+
+        void setTokenTypeAccess(TokenType type);
+        void setTokenTypeOOP(TokenType type);
+
+        void setTokenType(std::string value);
+        void setToken(char& value);
+        void setToken(std::string& value);
+        void determineTokenLine(std::string line);
 
         void callDebugPrint();
+        void handleError(Result res);
 
     public:
-        Tokenizer(std::ifstream& file);
-        bool isTokenTypeValid(std::string value, Result& res);
-        void getToken(std::string value);
-        void handleError(Result res);
+        Tokenizer(std::string fileName, std::ifstream& file);
         void tokenize();
 };

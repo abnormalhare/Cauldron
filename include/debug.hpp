@@ -1,8 +1,8 @@
 #include <array>
 #include <iostream>
 
+#include "build/tokentype.hpp"
 #include "build/token.hpp"
-#include "build/node.hpp"
 
-void printNode(Node* node);
-void debugPrint(Node* node);
+void printNode(Token* token);
+void debugPrint(Token* token);
