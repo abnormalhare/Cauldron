@@ -56,7 +56,6 @@ void Tokenizer::setCurrNodeStructure(TokenType tokenType) {
     }
     this->nsAdd(tokenType);
     this->allowedWords = {"__str"};
-    this->isNameReady = true;
 }
 
 void Tokenizer::setCurrNodeFunction(TokenType tokenType) {
@@ -73,7 +72,6 @@ void Tokenizer::setCurrNodeFunction(TokenType tokenType) {
     }
     this->nsAdd(tokenType);
     this->allowedWords = {"__str"};
-    this->isNameReady = true;
 }
 
 void Tokenizer::setCurrNodeCompare(TokenType tokenType) {
@@ -86,11 +84,14 @@ void Tokenizer::setCurrNodeCompare(TokenType tokenType) {
 
     this->nsAdd(tokenType);
     this->allowedWords = {"__int", "="};
-    this->isNameReady = true;
+}
+
+void Tokenizer::setCurrNodeVar(std::string tokenName) {
+    this->allowedWords = { "=", ";" };
 }
 
 bool Tokenizer::isValueName(std::string value, Result& res) {
-    if (this->allowedWords[0] != "__str" || !this->isNameComplete) return false;
+    if (!isValInArray("__str", this->allowedWords)) return false;
 
     if (value.size() == 0) {
         this->badName = value;
@@ -98,7 +99,6 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
         handleError(res);
     }
 
-    this->isNameComplete = false;
     TokenType prevToken = this->nodeStruct->tokens.at(indexBackward(-1));
     TokenType typeToken = this->nodeStruct->tokens.at(0);
     if (prevToken != FUNC) {
@@ -119,12 +119,10 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
 
     switch (prevToken) {
     case TRAIT:
-        this->nodeStruct = createChildNode();
         this->allowedWords = { "<", "{" };
         break;
     
     case CLASS:
-        this->nodeStruct = createChildNode();
         this->allowedWords = { "{" };
         break;
     
@@ -158,12 +156,18 @@ bool Tokenizer::isValueName(std::string value, Result& res) {
         this->nsSetParent();
         this->allowedWords = { ",", ")" };
         break;
+
+    case VAR:
+        this->allowedWords = { ":" };
+        break;
     
     default:
         this->badToken = prevToken;
         res = CDRES_UNIMPLEMENTED;
         break;
     }
+
+    if (res != CDRES_OK) this->handleError(res);
 
     return true;
 }
@@ -172,8 +176,11 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
     if (value == "") return true;
 
     if (this->isValueName(value, res)) {
-        handleError(res);
         return true;
+    }
+
+    if (isValInArray(value, baseAllowedTypes) && isValInArray("__str", this->allowedWords)) {
+        this->setCurrNodeVar(value);
     }
 
     if (!std::count(allowedWords.begin(), allowedWords.end(), value)) {
@@ -194,11 +201,16 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
     else if (value == "overload") this->setCurrNodeFunction(OVERLOAD);
     else if (value == "override") this->setCurrNodeFunction(OVERRIDE);
 
-    else if (value == "<") { this->setCurrNodeCompare(LT);
+    else if (value == "var") {
+        this->nodeStruct = createChildNode();
+        this->nsAdd(VAR);
+        this->allowedWords = {"__str"};
+    } else if (value == "<") {
+        this->nodeStruct = createChildNode();
+        this->setCurrNodeCompare(LT);
         if (isOOP(currParentStructure)) {
             this->nsAdd(TYPE_DEF);
             this->allowedWords = {"__str"};
-            this->isNameReady = true;
         }
     } else if (value == ">") { this->setCurrNodeCompare(GT);
         if (isOOP(currParentStructure)) {
@@ -206,8 +218,12 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
             this->allowedWords = {"{"};
         }
     } else if (value == "{") {
-        this->nodeStruct = createChildNode();
-        this->allowedWords = { "func", "impl" };
+        if (currStructure == TRAIT) {
+            this->nodeStruct = createChildNode();
+            this->allowedWords = { "func", "impl", "}" };
+        } else if (currStructure == CLASS) {
+            this->allowedWords = { "func", "impl", "var", "const", "}" };
+        }
     } else if (value == "}") {
         while (this->nodeStruct->tokens.size() == 0) {
             this->nsSetParent();
@@ -226,7 +242,6 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
         this->nodeStruct = createChildNode();
         this->nsAdd(PARAMETER_DEF);
         this->allowedWords = { "__str", ")" };
-        this->isNameReady = true;
     } else if (value == ")") {
         while (!isOOP(currStructure) && !isFunc(currStructure)) {
             this->nsSetParent();
@@ -240,14 +255,13 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
         this->nodeStruct = createChildNode();
         this->nodeStruct->name = "type";
         this->nsAdd(TYPE_IDENT);
-        this->allowedWords = { "__str" };
-        this->isNameReady = true;
+        this->allowedWords = baseAllowedTypes;
+        this->allowedWords.push_back("__str");
     } else if (value == ",") {
         this->nsSetParent();
         this->nodeStruct = createChildNode();
         if (currParentName == "params") this->nsAdd(PARAMETER_DEF);
         this->allowedWords = { "__str" };
-        this->isNameReady = true;
     } else if (value == ";") {
         while (this->nodeStruct != nullptr && (!isOOP(currStructure) || currStructure == FUNC)) {
             this->nsSetParent();
@@ -263,22 +277,30 @@ bool Tokenizer::isTokenTypeValid(std::string value, Result& res) {
 void Tokenizer::getToken(std::string value) {
     Result res = CDRES_OK;
     std::string tokenValue;
+    char currChar;
 
     for (size_t index = 0; index < value.size(); index++) {
-        // if its a space, ignore it
-        if (isspace(value[index])) continue;
-        // if its a separator, and the name hasnt been run into
-        if (isSeparator(value[index]) && this->isNameReady) {
-            index--;
-            this->isNameReady = false;
-            this->isNameComplete = true;
-        } else {
-            tokenValue.push_back(value[index]);
-        }
+        currChar = value[index];
 
-        if (this->isTokenTypeValid(tokenValue, res)) {
-            this->callDebugPrint();
-            tokenValue = "";
+        uint8_t sep = ((isspace(currChar) != 0) << 1) | isSeparator(currChar);
+        if (sep == 0b00) { // is a standard character
+            tokenValue.push_back(currChar);
+        } else if (sep == 0b01) { // is a separator
+            if (this->isTokenTypeValid(tokenValue, res)) {
+                this->callDebugPrint();
+                tokenValue = "";
+                tokenValue.push_back(currChar);
+                this->isTokenTypeValid(tokenValue, res);
+                this->callDebugPrint();
+                tokenValue = "";
+            } else {
+                res = CDRES_SYNTAX;
+            }
+        } else if (sep == 0b10 || sep == 0b11) { // is a space
+            if (this->isTokenTypeValid(tokenValue, res)) {
+                this->callDebugPrint();
+                tokenValue = "";
+            }
         }
     }
 
@@ -317,8 +339,6 @@ void Tokenizer::tokenize() {
         std::string line;
         std::getline(this->file, line);
         this->getToken(line);
-
-        // this->callDebugPrint();
     }
 }
 

@@ -13,9 +13,7 @@
 #include "debug.hpp"
 #include "build/token.hpp"
 
-const std::array<std::string, 85> disallowedNames = {
-    "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
-    "bool", "string", "func", "date", "array", "vararray", "hashmap",
+const std::array<std::string, 66> disallowedNames = {
     "struct", "union", "enum", "class", "trait", "impl",
     "func",
     "&", "*",
@@ -57,9 +55,9 @@ const std::array<std::string, 60> disallowedFuncOpNames = {
 };
 
 #define isValInArray(value, array) \
-    std::find(array.begin(), array.end(), value) != array.end()
+    (std::find(array.begin(), array.end(), value) != array.end())
 #define areSymbolsInVal(value, symbols) \
-    std::any_of(value.begin(), value.end(), [](char c) { return isValInArray(c, symbols); })
+    (std::any_of(value.begin(), value.end(), [](char c) { return isValInArray(c, symbols); }))
 #define indexBackward(index) this->nodeStruct->tokens.size() index
 
 #define currAccess this->nodeStruct->tokens[0]
@@ -78,14 +76,18 @@ const std::vector<std::string> baseAllowedTokens = {
     "}"
 };
 
+const std::vector<std::string> baseAllowedTypes = {
+    "void", "s8", "u8", "char", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
+    "bool", "string", "func", "date", "array", "vararray", "hashmap",
+};
+
 class Tokenizer {
     private:
         std::ifstream& file;
         std::vector<std::string> allowedWords = baseAllowedTokens;
         std::shared_ptr<Node> root;
         std::shared_ptr<Node> nodeStruct;
-        bool isNameReady = false;
-        bool isNameComplete = false;
+        char sepUnused = 0x0;
         
         std::string badName;
         TokenType badToken;
@@ -100,6 +102,7 @@ class Tokenizer {
         void setCurrNodeStructure(TokenType tokenType);
         void setCurrNodeFunction(TokenType tokenType);
         void setCurrNodeCompare(TokenType tokenType);
+        void setCurrNodeVar(std::string tokenName);
 
         void callDebugPrint();
 
