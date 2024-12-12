@@ -1,6 +1,6 @@
 #include "debug.hpp"
 
-const std::array<std::string, 82> printNames = {
+const std::array<std::string, 81> printNames = {
     "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
     "bool", "string", "func", "date", "array", "vararray", "hashmap",
     "struct", "union", "enum", "class", "trait", "impl",
@@ -11,7 +11,6 @@ const std::array<std::string, 82> printNames = {
     ";", ":", ".", ",",
     "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
     "==", "!=", "<", ">", "<=", ">=",
-    "=>",
     "[type]", "[parameter]", "[function]", "[class]", "[trait]", "[impl]",
     "[line comment]", "[comment]",
     "public", "private", "protected", "internal",
@@ -19,7 +18,7 @@ const std::array<std::string, 82> printNames = {
 };
 
 int numLines = 0;
-void printNode(std::shared_ptr<Node> node) {
+void printNode(Node* node) {
     std::string indent;
     for (int i = 0; i < numLines; i++) {
         indent += "| ";
@@ -31,7 +30,7 @@ void printNode(std::shared_ptr<Node> node) {
     }
 }
 
-void debugPrint(std::shared_ptr<Node> node) {
+void debugPrint(Node* node) {
     // print all nodes
     printNode(node);
     numLines++;

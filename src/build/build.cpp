@@ -10,7 +10,7 @@ bool isSeparator(char value) {
 
 bool isSeparatorType(TokenType type) {
     return type == END || type == ITEM_SEPARATOR || type == TYPE_IDENT || type == MODULE_ACCESS
-        || type == TYPE_DEF || type == LAMBDA || type == PARAMETER_DEF
+        || type == TYPE_DEF || type == PARAMETER_DEF
         || type == FUNCTION_DEF || type == CLASS_DEF || type == TRAIT_DEF || type == IMPL_DEF
         || type == COMMENT_DEF;
 }

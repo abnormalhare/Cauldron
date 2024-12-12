@@ -1,8 +1,8 @@
-#include <memory>
 #include <array>
 #include <iostream>
 
 #include "build/token.hpp"
+#include "build/node.hpp"
 
-void printNode(std::shared_ptr<Node> node);
-void debugPrint(std::shared_ptr<Node> node);
+void printNode(Node* node);
+void debugPrint(Node* node);

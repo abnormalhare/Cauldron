@@ -28,7 +28,6 @@ enum TokenType {
     // operators
     ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, BAND, BOR, AND, OR, XOR, SHL, SHR,
     EQ, NE, LT, GT, LE, GE,
-    LAMBDA,
 
     // brackets
     TYPE_DEF,
@@ -48,10 +47,3 @@ bool isSeparator(char value);
 bool isSeparatorType(TokenType type);
 bool isOOP(TokenType type);
 bool isFunc(TokenType type);
-
-struct Node {
-    std::shared_ptr<Node> parent;
-    std::vector<TokenType> tokens;
-    std::string name;
-    std::vector<std::shared_ptr<Node>> children;
-};

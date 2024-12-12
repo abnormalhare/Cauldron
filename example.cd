@@ -4,7 +4,7 @@ public trait compare<T> {
 }
 public class Example {
   var z: s32;
-  func get_self(): Example => self;
+  func get_self(): Example { ret self };
 }
 
 public class Point {

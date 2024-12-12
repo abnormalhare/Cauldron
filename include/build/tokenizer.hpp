@@ -5,25 +5,20 @@
 #include <vector>
 #include <ctype.h>
 #include <algorithm>
-#include <memory>
 #include <array>
 #include <string>
 
 #include "resultT.hpp"
 #include "debug.hpp"
 #include "build/token.hpp"
+#include "build/node.hpp"
 
-const std::array<std::string, 66> disallowedNames = {
+const std::array<std::string, 28> disallowedNames = {
     "struct", "union", "enum", "class", "trait", "impl",
     "func",
     "&", "*",
     "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
     "overload", "override", "const", "var", "type",
-    ";", ":", ".", ",",
-    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
-    "==", "!=", "<", ">", "<=", ">=",
-    "=>",
-    "<", ">", "(", ")", "{", "}", "[", "]", "//", "/*", "*/",
     "public", "private", "protected", "internal",
     "self",
 };
@@ -33,6 +28,7 @@ const std::array<char, 27> disallowedSymbols {
     '>', '=', '?', ':', ';', ',', '(', ')', '{', '}',
     '[', ']', '.', ' ', '\t', '\n', '\r'
 };
+
 
 const std::array<std::string, 22> funcOpNames = {
     "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
@@ -48,7 +44,6 @@ const std::array<std::string, 60> disallowedFuncOpNames = {
     "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
     "overload", "override", "const", "var", "type",
     ";", ":", ".", ",",
-    "=>",
     "(", ")", "{", "}", "[", "]", "//", "/*", "*/",
     "public", "private", "protected", "internal",
     "self",
@@ -85,17 +80,12 @@ class Tokenizer {
     private:
         std::ifstream& file;
         std::vector<std::string> allowedWords = baseAllowedTokens;
-        std::shared_ptr<Node> root;
-        std::shared_ptr<Node> nodeStruct;
+        Node* root;
+        Node* nodeStruct;
         char sepUnused = 0x0;
         
         std::string badName;
         TokenType badToken;
-
-        std::shared_ptr<Node> createChildNode();
-
-        void nsAdd(TokenType token);
-        void nsSetParent();
 
         bool isValueName(std::string value, Result& res);
         void setCurrNodeAccess(TokenType tokenType);
