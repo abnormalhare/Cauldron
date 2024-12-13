@@ -1,5 +1,5 @@
 public trait compare<T> {
-  func ==(a: T, b: T);
+  private func ==(a: T, b: T);
   func !=(a: T, b: T);
 }
 public class Example {
@@ -15,8 +15,8 @@ public class Point {
     self.y = y;
   }
   impl compare<type self> { // could also be <Point>
-    fn ==(a: Point, b: Point): bool => a.x == b.x && a.y == b.y;
-    fn !=(a: Point, b: Point): bool => a.x != b.x || a.y != b.y;
+    func ==(a: Point, b: Point): bool => a.x == b.x && a.y == b.y;
+    func !=(a: Point, b: Point): bool => a.x != b.x || a.y != b.y;
   }
   impl Example {
     Point(x: s32, y: s32, z: s32) {

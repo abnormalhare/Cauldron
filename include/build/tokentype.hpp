@@ -20,13 +20,13 @@ enum TokenType {
 
     // keywords
     IF, ELSE, WHILE, FOR, BREAK, CONTINUE, RET, SWITCH, CASE,
-    OVERLOAD, OVERRIDE, CONST, VAR, TYPE, STATIC,
+    OVERLOAD, CONST, VAR, TYPE, STATIC,
 
     // symbols
-    END, TYPE_IDENT, MODULE_ACCESS, ITEM_SEPARATOR, DEFINE,
+    END, TYPE_IDENT, MODULE_ACCESS, ITEM_SEPARATOR, DEFINE, OOP_START,
 
     // operators
-    ADD, SUB, MUL, DIV, MOD, INC, DEC, NEG, NOT, BAND, BOR, AND, OR, XOR, SHL, SHR,
+    ADD, SUB, MUL, DIV, MOD, PWR, INC, DEC, NEG, NOT, BAND, BOR, AND, OR, XOR, SHL, SHR,
     EQ, NE, LT, GT, LE, GE,
 
     // brackets
@@ -34,6 +34,7 @@ enum TokenType {
     GENERIC_DEF,
     PARAMETER_DEF,
     FUNCTION_DEF,
+    BEFORE_DEF,
     CLASS_DEF,
     TRAIT_DEF,
     IMPL_DEF,
@@ -47,4 +48,5 @@ enum TokenType {
 bool isSeparator(char value);
 bool isSeparatorType(TokenType type);
 bool isOOP(TokenType type);
+bool isAccess(TokenType type);
 bool isFunc(TokenType type);

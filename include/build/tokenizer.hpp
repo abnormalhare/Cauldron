@@ -6,7 +6,7 @@
 #include <iterator>
 
 #include "base.hpp"
-#include "resultT.hpp"
+#include "result.hpp"
 #include "debug.hpp"
 #include "build/tokentype.hpp"
 #include "build/token.hpp"
@@ -21,19 +21,26 @@ const std::array<std::string, 28> disallowedNames = {
     "self",
 };
 
-const std::array<char, 27> disallowedSymbols {
+const std::array<char, 31> disallowedSymbols {
     '+', '-', '*', '/', '%', '!', '&', '|', '^', '<',
     '>', '=', '?', ':', ';', ',', '(', ')', '{', '}',
-    '[', ']', '.', ' ', '\t', '\n', '\r'
+    '[', ']', '.', ' ', '\t', '\n', '\r', '$', '#', '@',
+    '\\'
 };
 
-
-const std::array<std::string, 22> funcOpNames = {
-    "+", "-", "*", "/", "%", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
-    "==", "!=", "<", ">", "<=", ">=",
+const std::array<char, 21> disallowedFuncSymbols {
+    '&', '!', '?', ':', ';', ',', '(', ')', '{', '}',
+    '[', ']', '.', ' ', '\t', '\n', '\r', '$', '#', '@',
+    '\\'
 };
 
-const std::array<std::string, 60> disallowedFuncOpNames = {
+const std::array<std::string, 23> funcNames = {
+    "+", "-", "*", "/", "%", "**", "++", "--", "-", "!",
+    "&&", "||", "&", "|", "^", "<<", ">>", "==", "!=", "<",
+    ">", "<=", ">=",
+};
+
+const std::array<std::string, 60> disallowedFuncNames = {
     "void", "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "f32", "f64", "f128",
     "bool", "string", "func", "date", "array", "vararray", "hashmap",
     "struct", "union", "enum", "class", "trait", "impl",
@@ -73,6 +80,7 @@ class Tokenizer {
         
         Token* compareAgainst;
         std::vector<std::string> allowedValues = baseAllowedTokens;
+        bool couldBeOpFunc;
 
         std::string badName;
         TokenType badToken;
@@ -88,7 +96,7 @@ class Tokenizer {
         void determineTokenLine(std::string line);
 
         void callDebugPrint();
-        void handleError(Result res);
+        void handleError(Result res, std::string func);
 
     public:
         Tokenizer(std::string fileName, std::ifstream& file);

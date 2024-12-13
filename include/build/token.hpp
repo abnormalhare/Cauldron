@@ -27,7 +27,12 @@ class Token {
 
 };
 
-#define setChild(token, pos) token = token->children[pos]
-#define setChildIB(token, pos) token = token->children[token->children.size() - pos]
+#define setChild(from, to) \
+    auto __tokenI = find(to, from->children); \
+    if (__tokenI != from->children.end()) { \
+        int i = std::distance(from->children.begin(), __tokenI);\
+        from = from->children[i]; \
+    } \
+
 #define setParent(token) token = token->parent
-#define addSetChild(token, type) token->add(type); setChildIB(token, 1)
+#define addSetChild(token, type) Token* __cToken = token->add(type); setChild(token, __cToken)

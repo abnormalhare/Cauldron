@@ -8,6 +8,18 @@ Tokenizer::Tokenizer(std::string fileName, std::ifstream& file) : fileName(fileN
 
 void Tokenizer::setTokenName(std::string value) {
     Token* token = this->currToken;
+
+    // check for if the current name is allowed
+    if (token->type != FUNC) {
+        if (isValInArray(value, disallowedNames)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenName+isValInArray");
+        if (areSymbolsInVal(value, disallowedSymbols)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenName+areSymbolsInVal");
+    } else {
+        if (isValInArray(value, disallowedFuncNames)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenName+funcIsValInArray");
+        if (areSymbolsInVal(value, disallowedFuncSymbols)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenName+funcIsValInArray");
+    }
+
+    this->couldBeOpFunc = false;
+
     // set the token's name
     token->value = value;
 
@@ -24,20 +36,35 @@ void Tokenizer::setTokenName(std::string value) {
                 ">"
             };
             break;
+        case PARAMETER_DEF:
+            this->allowedValues = {
+                ":"
+            };
+            break;
+        case FUNC:
+            this->allowedValues = {
+                "("
+            };
+            break;
 
         default:
-            handleError(CDRES_UNIMPLEMENTED);
+            handleError(CDRES_UNIMPLEMENTED, "setTokenName+switch");
     }
 }
 
+// sets an access token to be moved inside the next token
 void Tokenizer::setTokenTypeAccess(TokenType type) {
     // add the token
     this->currToken->add(type);
-    if (this->baseTokens.size() != 0) {
+    // if we are not in the base file
+    if (this->baseTokens.size() > 1) {
+        // allow functions and variables to have custom access
         this->allowedValues = {
             "trait", "class", "impl", "func", "var"
         };
+    // otherwise,
     } else {
+        // only allow OOP to have custom access
         this->allowedValues = {
             "trait", "class", "impl"
         };
@@ -48,13 +75,13 @@ void Tokenizer::setTokenTypeOOP(TokenType type) {
     Token* oop = this->currToken->add(type);
 
     if (this->currToken->children.size() < 2) {
-        setChild(this->currToken, 0);
+        setChild(this->currToken, oop);
         this->currToken->add(PRIVATE);
     } else {
         Token* access = this->currToken->children.front();
 
         this->currToken->cutToChild(access, oop);
-        setChild(this->currToken, 0);
+        setChild(this->currToken, oop);
     }
 
     this->compareAgainst = oop;
@@ -64,18 +91,15 @@ void Tokenizer::setTokenTypeOOP(TokenType type) {
 void Tokenizer::setTokenType(std::string value) {
     if (value == "") return;
 
+    std::vector<std::string> prevAV;
+    mycopy(this->allowedValues, prevAV);
+
     this->badName = value;
 
     if (isValInArray("__str", this->allowedValues)) {
-        std::vector<std::string> prevAV;
-        mycopy(this->allowedValues, prevAV);
-
         this->setTokenName(value);
         if (prevAV.size() == 1) return;
-    }
-
-    if (!isValInArray(value, this->allowedValues)) handleError(CDRES_SYNTAX);
-
+    } else if (!isValInArray(value, this->allowedValues)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenType+allowedValues");
 
     if      (value == "public")    this->setTokenTypeAccess(PUBLIC);
     else if (value == "private")   this->setTokenTypeAccess(PRIVATE);
@@ -87,9 +111,30 @@ void Tokenizer::setTokenType(std::string value) {
     else if (value == "impl")      this->setTokenTypeOOP(IMPL);
 
     else if (value == "func") {
-        if (!isOOP(this->currToken->type)) {
-            
+        Token* func = this->currToken->add(FUNC);
+        
+        bool funcIsOOP = isOOP(this->currToken->type);
+        bool funcHasAccess = isAccess(this->currToken->children.front()->type);
+        if (funcIsOOP && funcHasAccess) {
+            Token* access = this->currToken->children.front();
+
+            this->currToken->cutToChild(access, func);
+            setChild(this->currToken, func);
+        } else if (funcIsOOP && !funcHasAccess) {
+            Token* access = this->currToken->parent->children[0];
+
+            setChild(this->currToken, func);
+            this->currToken->add(access->type);
+        } else if (!funcIsOOP && funcHasAccess) {
+            handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenType+funcCheck");
+        } else {
+            setChild(this->currToken, func);
+            this->currToken->add(PUBLIC);
         }
+
+        this->couldBeOpFunc = true;
+        this->compareAgainst = func;
+        this->allowedValues = { "__str" };
     }
 
     else if (value == "<") {
@@ -98,11 +143,10 @@ void Tokenizer::setTokenType(std::string value) {
             return;
         }
 
-        Token* token = this->currToken->add(GENERIC_DEF);
-        setChildIB(this->currToken, 1);
+        addSetChild(this->currToken, GENERIC_DEF);
 
-        this->compareAgainst = token;
-        this->allowedValues = { "__str" };
+        this->compareAgainst = __cToken; // "return" token for addSetChild
+        this->allowedValues = { "__str", "&" };
     } else if (value == ">") {
         if (this->currToken->parent->type == IF) {
             this->currToken->add(GT);
@@ -121,20 +165,53 @@ void Tokenizer::setTokenType(std::string value) {
         } else if (prevToken->type == TYPE_IDENT) {
             this->currToken->add(DEFINE);
         }
+    } else if (value == "(") {
+        if (this->currToken->type == FUNC) {
+            addSetChild(this->currToken, PARAMETER_DEF);
+            this->compareAgainst = __cToken;
+        } else {
+            addSetChild(this->currToken, BEFORE_DEF);
+            this->compareAgainst = __cToken;
+        }
+        this->allowedValues = { "__str", ")" };
     } else if (value == "{") {
         TokenType type = this->currToken->type;
 
         switch (type) {
-            case TRAIT: addSetChild(this->currToken, TRAIT_DEF); break;
-            case CLASS: addSetChild(this->currToken, CLASS_DEF); break;
-            case IMPL:  addSetChild(this->currToken, IMPL_DEF); break;
-            case FUNC:  addSetChild(this->currToken, FUNCTION_DEF); break;
-            default: handleError(CDRES_SYNTAX);
+            case TRAIT: {
+                addSetChild(this->currToken, TRAIT_DEF);
+                this->allowedValues = {
+                    "}", "func", "var",
+                    "public", "private", "internal", "protected"
+                };
+            } break;
+            case CLASS: {
+                addSetChild(this->currToken, CLASS_DEF);
+                this->allowedValues = {
+                    "}", "func", "var",
+                    "public", "private", "internal", "protected"
+                };
+            } break;
+            case IMPL:  {
+                addSetChild(this->currToken, IMPL_DEF);
+                this->allowedValues = {
+                    "}", "func",
+                    "public", "private", "internal", "protected"
+                };
+            } break;
+            case FUNC:  {
+                addSetChild(this->currToken, FUNCTION_DEF);
+                this->allowedValues = {
+                    "__str", "}", "var", "self",
+                    "if", "while", "for", "ret", "switch", "const"
+                };
+            } break;
+            default: handleError(CDRES_SYNTAX_NOT_DEFINED, "setTokenType+{check");
         }
 
         this->baseTokens.push_back(this->currToken);
-    } else {
-        handleError(CDRES_SYNTAX);
+    } else if (!isValInArray("__str", prevAV)) {
+        handleError(CDRES_SYNTAX_NOT_DEFINED, "setTokenType+elseValue");
     }
     
 }
@@ -160,23 +237,23 @@ void Tokenizer::determineTokenLine(std::string line) {
         currChar = line[index];
 
         uint8_t sep = ((isspace(currChar) != 0) << 1) | isSeparator(currChar);
-        if (sep == 0b00) { // is a standard character
-            value.push_back(currChar);
-        } else if (sep == 0b01) { // is a separator
+        if (sep & 0b10) {
+            this->setToken(value);
+        } else if (sep == 0b01 || (this->couldBeOpFunc && isValInArray(value, funcNames))) {
             this->setToken(value);
             this->setToken(currChar);
-        } else if (sep == 0b10 || sep == 0b11) { // is a space
-            this->setToken(value);
+        } else {
+            value.push_back(currChar);
         }
     }
 
     if (value.size() > 0) {
         this->badName = value;
-        handleError(CDRES_SYNTAX);
+        handleError(CDRES_SYNTAX_NOT_ALLOWED, "determineTokenLine");
     }
 }
 
-void Tokenizer::handleError(Result res) {
+void Tokenizer::handleError(Result res, std::string func) {
     if (res == CDRES_OK) return;
 
     switch (res) {
@@ -186,8 +263,11 @@ void Tokenizer::handleError(Result res) {
         case CDRES_FILE:
             std::cout << "Error: Invalid file" << std::endl;
             break;
-        case CDRES_SYNTAX:
-            std::cout << "Error: Invalid syntax: \"" << this->badName << "\" (" << this->badName.size() << ")" << std::endl;
+        case CDRES_SYNTAX_NOT_ALLOWED:
+            std::cout << "Error: Syntax not allowed: \"" << this->badName << "\"" << std::endl;
+            break;
+        case CDRES_SYNTAX_NOT_DEFINED:
+            std::cout << "Error: Syntax not defined: \"" << this->badName << "\"" << std::endl;
             break;
         case CDRES_UNIMPLEMENTED:
             std::cout << "Error: Unimplemented feature: " << this->badToken << std::endl;
@@ -196,6 +276,7 @@ void Tokenizer::handleError(Result res) {
             break;
     }
     
+    std::cout << "@" << func << std::endl; 
     exit(res);
 }
 
@@ -209,6 +290,7 @@ void Tokenizer::tokenize() {
 }
 
 void Tokenizer::callDebugPrint() {
+    clrscrn();
     std::cout << "================" << std::endl;
     debugPrint(this->baseTokens[0]);
 }

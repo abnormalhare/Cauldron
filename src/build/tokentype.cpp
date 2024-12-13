@@ -1,4 +1,4 @@
-#include "build/token.hpp"
+#include "build/tokentype.hpp"
 
 bool isSeparator(char value) {
     return value == ';' || value == ',' || value == ':' || value == '.' || value == ' '
@@ -17,6 +17,10 @@ bool isSeparatorType(TokenType type) {
 
 bool isOOP(TokenType type) {
     return type == CLASS_DEF || type == TRAIT_DEF || type == IMPL_DEF;
+}
+
+bool isAccess(TokenType type) {
+    return type == PUBLIC || type == PRIVATE || type == PROTECTED || type == INTERNAL;
 }
 
 bool isFunc(TokenType type) {
