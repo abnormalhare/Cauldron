@@ -19,6 +19,17 @@ Token* Token::add(Token* token) {
     return token;
 }
 
+Token* Token::get(Token* token, int offset) {
+    auto findToken = find(token, this->children);
+    
+    if (findToken != this->children.end()) {
+        int index = std::distance(this->children.begin(), findToken);
+        return this->children[index + offset];
+    } else {
+        return nullptr;
+    }
+}
+
 void Token::remove(int pos) {
     this->children.erase(this->children.begin() + pos);
 }

@@ -17,6 +17,7 @@ class Token {
 
         Token* add(TokenType type, std::string value = "");
         Token* add(Token* token);
+        Token* get(Token* token, int offset = 0);
         void remove(int pos);
         void remove(Token* token);
         void replace(Token* from, Token* to);

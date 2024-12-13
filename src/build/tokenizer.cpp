@@ -18,6 +18,7 @@ void Tokenizer::setTokenName(std::string value) {
         if (areSymbolsInVal(value, disallowedFuncSymbols)) handleError(CDRES_SYNTAX_NOT_ALLOWED, "setTokenName+funcIsValInArray");
     }
 
+    // it cant be an operator func name twice!
     this->couldBeOpFunc = false;
 
     // set the token's name
@@ -27,6 +28,7 @@ void Tokenizer::setTokenName(std::string value) {
     // should be different
     switch (this->compareAgainst->type) {
         case TRAIT:
+        case CLASS:
             this->allowedValues = {
                 "<", "{"
             };
@@ -46,8 +48,41 @@ void Tokenizer::setTokenName(std::string value) {
                 "("
             };
             break;
+        case TYPE_IDENT:
+            setParent(this->currToken);
+            if (this->currToken->type == PARAMETER_DEF) {
+                this->allowedValues = {
+                    ",", ")"
+                };
+            } else if (this->currToken->type == VAR) {
+                /* SET ALL PREVIOUS VARIABLES TO SAME TYPE */
+                // get the token before the current one
+                Token* prevToken = this->currToken->parent->get(this->currToken, -1);
+                Token* newToken;
+                // if the previous token is a variable and has no type
+                while (prevToken->type == VAR && prevToken->children.size() == 0) {
+                    // add a token to the previous variable
+                    newToken = prevToken->add(TYPE_IDENT);
+                    // set that token's value to the current type
+                    newToken->value = value;
+                    // get the next previous token
+                    prevToken = this->currToken->parent->get(token, -1);
+
+                    if (prevToken == nullptr) break;
+                }
+                this->allowedValues = {
+                    ";"
+                };
+            }
+            break;
+        case VAR:
+            this->allowedValues = {
+                ":", ","
+            };
+            break;
 
         default:
+            this->badToken = this->compareAgainst->type;
             handleError(CDRES_UNIMPLEMENTED, "setTokenName+switch");
     }
 }
@@ -72,13 +107,15 @@ void Tokenizer::setTokenTypeAccess(TokenType type) {
 }
 
 void Tokenizer::setTokenTypeOOP(TokenType type) {
-    Token* oop = this->currToken->add(type);
+    Token* oop;
 
     if (this->currToken->children.size() < 2) {
+        oop = this->currToken->add(type);
         setChild(this->currToken, oop);
         this->currToken->add(PRIVATE);
     } else {
-        Token* access = this->currToken->children.front();
+        Token* access = this->currToken->children.back();
+        oop = this->currToken->add(type);
 
         this->currToken->cutToChild(access, oop);
         setChild(this->currToken, oop);
@@ -135,6 +172,11 @@ void Tokenizer::setTokenType(std::string value) {
         this->couldBeOpFunc = true;
         this->compareAgainst = func;
         this->allowedValues = { "__str" };
+    } else if (value == "var") {
+        addSetChild(this->currToken, VAR);
+
+        this->compareAgainst = __cToken;
+        this->allowedValues = { "__str" };
     }
 
     else if (value == "<") {
@@ -174,6 +216,12 @@ void Tokenizer::setTokenType(std::string value) {
             this->compareAgainst = __cToken;
         }
         this->allowedValues = { "__str", ")" };
+    } else if (value == ")") {
+        if (this->currToken->type == PARAMETER_DEF) {
+            setParent(this->currToken);
+        }
+
+        this->allowedValues = { ";" }; // temp
     } else if (value == "{") {
         TokenType type = this->currToken->type;
 
@@ -209,7 +257,28 @@ void Tokenizer::setTokenType(std::string value) {
             default: handleError(CDRES_SYNTAX_NOT_DEFINED, "setTokenType+{check");
         }
 
+        this->allowedBaseValues.push_back(this->allowedValues);
         this->baseTokens.push_back(this->currToken);
+    } else if (value == "}") {
+        this->baseTokens.pop_back();
+        this->currToken = this->baseTokens.back();
+
+        this->allowedValues = this->allowedBaseValues.back();
+        this->allowedBaseValues.pop_back();
+    } else if (value == ";") {
+        this->currToken = this->baseTokens.back();
+        this->allowedValues = this->allowedBaseValues.back();
+    } else if (value == ":") {
+        addSetChild(this->currToken, TYPE_IDENT);
+        this->compareAgainst = __cToken;
+        this->allowedValues = { "__str" };
+    } else if (value == ",") {
+        TokenType type = this->currToken->type;
+        setParent(this->currToken);
+        addSetChild(this->currToken, type);
+
+        this->compareAgainst = __cToken;
+        this->allowedValues = { "__str" };
     } else if (!isValInArray("__str", prevAV)) {
         handleError(CDRES_SYNTAX_NOT_DEFINED, "setTokenType+elseValue");
     }
@@ -232,14 +301,20 @@ void Tokenizer::setToken(std::string& value) {
 void Tokenizer::determineTokenLine(std::string line) {
     std::string value;
     char currChar;
+    uint8_t sep;
 
     for (size_t index = 0; index < line.size(); index++) {
         currChar = line[index];
 
-        uint8_t sep = ((isspace(currChar) != 0) << 1) | isSeparator(currChar);
+        if (this->couldBeOpFunc) {
+            sep = ((isspace(currChar) != 0) << 1) | (currChar == '(');
+        } else {
+            sep = ((isspace(currChar) != 0) << 1) | isSeparator(currChar);
+        }
+
         if (sep & 0b10) {
             this->setToken(value);
-        } else if (sep == 0b01 || (this->couldBeOpFunc && isValInArray(value, funcNames))) {
+        } else if (sep == 0b01) {
             this->setToken(value);
             this->setToken(currChar);
         } else {
@@ -291,6 +366,5 @@ void Tokenizer::tokenize() {
 
 void Tokenizer::callDebugPrint() {
     clrscrn();
-    std::cout << "================" << std::endl;
     debugPrint(this->baseTokens[0]);
 }

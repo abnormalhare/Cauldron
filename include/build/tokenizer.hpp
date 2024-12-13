@@ -29,7 +29,7 @@ const std::array<char, 31> disallowedSymbols {
 };
 
 const std::array<char, 21> disallowedFuncSymbols {
-    '&', '!', '?', ':', ';', ',', '(', ')', '{', '}',
+    '&', '?', ':', ';', ',', '(', ')', '{', '}',
     '[', ']', '.', ' ', '\t', '\n', '\r', '$', '#', '@',
     '\\'
 };
@@ -80,7 +80,8 @@ class Tokenizer {
         
         Token* compareAgainst;
         std::vector<std::string> allowedValues = baseAllowedTokens;
-        bool couldBeOpFunc;
+        std::vector<std::vector<std::string>> allowedBaseValues;
+        bool couldBeOpFunc = false;
 
         std::string badName;
         TokenType badToken;

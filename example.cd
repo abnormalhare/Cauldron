@@ -3,7 +3,7 @@ public trait compare<T> {
   func !=(a: T, b: T);
 }
 public class Example {
-  var z: s32;
+  var z, test: s32;
   func get_self(): Example { ret self };
 }
 

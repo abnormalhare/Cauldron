@@ -8,7 +8,7 @@ const std::array<std::string, 86> printNames = {
     "&", "*",
     "if", "else", "while", "for", "break", "continue", "ret", "switch", "case",
     "overload", "const", "var", "type", "static",
-    ";", ":", ".", ",", "=", "->",
+    "[end]", "[type]", "[module]", ",", "=", "->",
     "+", "-", "*", "/", "%", "**", "++", "--", "-", "!", "&&", "||", "&", "|", "^", "<<", ">>",
     "==", "!=", "<", ">", "<=", ">=",
     "[file]", "[generic]", "[parameter]", "[function]", "[parenth]", "[class]", "[trait]", "[impl]",
